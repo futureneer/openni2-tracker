@@ -5,10 +5,10 @@
   
   <node name="tracker" output="screen" pkg="openni2_tracker" type="tracker" >
     <param name="tf_prefix" value="$(arg tracker_name)" />
-    <param name="relative_frame" value="/tracker_depth_frame" />
+    <param name="relative_frame" value="/$(arg tracker_name)_depth_frame" />
   </node>
 
   <!-- TF Static Transforms to World -->
-  <node pkg="tf" type="static_transform_publisher" name="world_to_tracker" args=" 0 0 1.5 0 0 0  /world /$(arg tracker_name) 10"/> 
+  <node pkg="tf" type="static_transform_publisher" name="world_to_tracker" args=" 0 0 1.25 1.5707 0 1.7707  /world /$(arg tracker_name)_depth_frame 100"/> 
 
 </launch>
