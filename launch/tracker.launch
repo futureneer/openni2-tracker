@@ -1,0 +1,14 @@
+<!-- openni2_tracker Launch File -->
+<launch>
+
+  <arg name="tracker_name" default="tracker" />
+  
+  <node name="tracker" output="screen" pkg="openni2_tracker" type="tracker" >
+    <param name="tf_prefix" value="$(arg tracker_name)" />
+    <param name="relative_frame" value="/tracker_depth_frame" />
+  </node>
+
+  <!-- TF Static Transforms to World -->
+  <node pkg="tf" type="static_transform_publisher" name="world_to_tracker" args=" 0 0 1.5 0 0 0  /world /$(arg tracker_name) 10"/> 
+
+</launch>

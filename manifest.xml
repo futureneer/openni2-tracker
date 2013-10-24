@@ -1,0 +1,18 @@
+<package>
+  <description brief="openni2_tracker">
+
+     openni2_tracker
+
+  </description>
+  <author>Kelleher Guerin</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/openni2_tracker</url>
+  <depend package="roscpp"/>
+  <depend package="roslib"/>
+  <depend package="geometry_msgs"/>
+  <depend package="kdl_conversions"/>
+  <depend package="tf"/>
+</package>
+
+
