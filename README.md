@@ -23,6 +23,7 @@ You will probably need to create a free account.
     Change directories to the NiTE location and install with 
     
     ```bash
+    cd NiTE-Linux-x64-2.2
     sudo ./install.sh
     ```
 
@@ -31,3 +32,14 @@ You will probably need to create a free account.
     ```bash
     git clone git@github.com:futureneer/openni2-tracker.git
     ```
+
+4. Configure CMake
+    In the CMakeLists.txt file inside the `openni2_tracker` package, you will need to change the path where CMake will look for OpenNI2 and NiTE2.  
+
+    Change
+    
+    ```makefile
+    set(OPENNI2_DIR /home/kel/dev/OpenNI2)
+    set(NITE2_DIR /home/kel/dev/NiTE-Linux-x64-2.2/)
+    ```
+
