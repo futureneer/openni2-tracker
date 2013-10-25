@@ -34,12 +34,18 @@ You will probably need to create a free account.
     ```
 
 4. Configure CMake
-    In the CMakeLists.txt file inside the `openni2_tracker` package, you will need to change the path where CMake will look for OpenNI2 and NiTE2.  
-
-    Change
+    In the CMakeLists.txt file inside the `openni2_tracker` package, you will need to change the path where CMake will look for OpenNI2 and NiTE2.  These two lines:
     
     ```makefile
     set(OPENNI2_DIR /home/kel/dev/OpenNI2)
     set(NITE2_DIR /home/kel/dev/NiTE-Linux-x64-2.2/)
     ```
+    
+    need to point to the root directories of where you extracted or cloned OpenNI2 and NiTE2, i.e:
+
+    ```makefile
+    set(OPENNI2_DIR /home/user-name/.../OpenNI2)
+    set(NITE2_DIR /home/user-name/.../NiTE-Linux-x64-2.2/)
+    ```
+    
 
