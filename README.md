@@ -48,4 +48,13 @@ You will probably need to create a free account.
     set(NITE2_DIR /home/user-name/.../NiTE-Linux-x64-2.2/)
     ```
     
+5. Make openni2_tracker
+
+    ```bash
+    roscd openni2_tracker
+    rosmake
+    ```
+    
+6. Set up NiTE2: Right now, NiTE requires that any executables point to a training sample directory at `.../NiTE-Linux-x64-2.2/Samples/Bin/NiTE2`.  If you run the NiTE sample code, this works fine because those examples are in that same directory.  However, to be able to roslaunch or rosrun openni2_tracker from any current directory, I have created a workaround script `setup_nite.bash`
+    
 
