@@ -27,8 +27,8 @@ Change directories to the NiTE location and install with
 sudo ./install.sh
 ```
 
-3. Clone openni2_tracker
+3. Clone openni2_tracker to your ROS workspace.
 
 ```bash
-git clone 
+git clone git@github.com:futureneer/openni2-tracker.git
 ```
