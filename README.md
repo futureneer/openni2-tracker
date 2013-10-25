@@ -26,7 +26,7 @@ You will probably need to create a free account.
     sudo ./install.sh
     ```
 
-3. Clone openni2_tracker to your ROS workspace.
+3. Clone `openni2_tracker` to your ROS workspace.
 
     ```bash
     git clone git@github.com:futureneer/openni2-tracker.git
