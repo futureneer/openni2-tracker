@@ -29,8 +29,8 @@ rosbuild_genmsg()
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 # Change two lines below according to your installation
-set(OPENNI2_DIR /home/kel/dev/OpenNI2)
-set(NITE2_DIR /home/kel/dev/NiTE-Linux-x64-2.2/)
+set(OPENNI2_DIR ~/dev/OpenNI2)
+set(NITE2_DIR ~/dev/NiTE-Linux-x64-2.2/)
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
