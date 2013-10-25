@@ -1,7 +1,7 @@
 openni2-tracker
 ===============
 
-A ROS Wrapper for the OpenNI2 and NiTE2 Skeleton Tracker
+`openni2_tracker` is a ROS Wrapper for the OpenNI2 and NiTE2 Skeleton Tracker.  Currently, all the node does is publish TF frames of the current tracked user's joint locations.  I will eventually be adding a user message similar to the old `openni_tracker` ROS package.
 
 ### Installation
 1. Clone the beta OpenNI2 repository from Github:
@@ -37,16 +37,11 @@ You will probably need to create a free account.
     In the CMakeLists.txt file inside the `openni2_tracker` package, you will need to change the path where CMake will look for OpenNI2 and NiTE2.  These two lines:
     
     ```makefile
-    set(OPENNI2_DIR /home/kel/dev/OpenNI2)
-    set(NITE2_DIR /home/kel/dev/NiTE-Linux-x64-2.2/)
+    set(OPENNI2_DIR ~/dev/OpenNI2)
+    set(NITE2_DIR ~/dev/NiTE-Linux-x64-2.2/)
     ```
-    
-    need to point to the root directories of where you extracted or cloned OpenNI2 and NiTE2, i.e:
+    need to point to the root directories of where you extracted or cloned OpenNI2 and NiTE2.
 
-    ```makefile
-    set(OPENNI2_DIR /home/user-name/.../OpenNI2)
-    set(NITE2_DIR /home/user-name/.../NiTE-Linux-x64-2.2/)
-    ```
     
 5. Make openni2_tracker
 
@@ -83,4 +78,5 @@ You will probably need to create a free account.
     
     Currently, this node will broadcast TF frames of the joints of any user being tracked by the tracker.  The frame names are based on the tracker name, currently `/tracker/user_x/joint_name`
     
-
+### THANKS!
+Please let me know if something doesnt work, or if you have suggestions (or feel free to add stuff and send a pull request).
