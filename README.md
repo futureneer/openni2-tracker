@@ -1,4 +1,4 @@
-openni2-tracker
+openni2_tracker
 ===============
 
 `openni2_tracker` is a ROS Wrapper for the OpenNI2 and NiTE2 Skeleton Tracker. This is designed as a companion package to the `openni2_camera` package (found [here](https://github.com/ros-drivers/openni2_camera)).  Currently, all this node does is publish TF frames of the current tracked user's joint locations.  I will eventually be adding a user message similar to the old `openni_tracker` ROS package.
