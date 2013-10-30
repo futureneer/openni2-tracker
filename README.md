@@ -27,6 +27,7 @@ You will probably need to create a free account.
     cd NiTE-Linux-x64-2.2
     sudo ./install.sh
     ```
+    Try and run one of the examples in `.../NiTE-Linux-x64-2.2/Samples/Bin/NiTE2`.  If these don't work, then something went wrong with your installation.
 
 3. Clone `openni2_tracker` to your ROS workspace.
 
