@@ -40,4 +40,5 @@ link_directories(${OPENNI2_DIR}/Bin/x64-Release
                  ${NITE2_DIR}/Redist)
 
 add_executable(tracker src/tracker.cpp)
-target_link_libraries(tracker OpenNI2 NiTE2 ${catkin_LIBRARIES})
+add_dependencies(tracker ${PROJECT_NAME}_gencpp)
+target_link_libraries(tracker OpenNI2 NiTE2 ${catkin_LIBRARIES} )
