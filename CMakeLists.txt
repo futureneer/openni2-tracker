@@ -1,43 +1,44 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(openni2_tracker)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
-rosbuild_init()
+find_package(catkin REQUIRED COMPONENTS
+             roscpp
+             rospy
+             message_generation   
+             geometry_msgs 
+             tf
+             std_msgs   )
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+add_message_files(
+   FILES
+   TrackerUser.msg
+   TrackerUserArray.msg
+ )
 
-#uncomment if you have defined messages
-rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
+generate_messages( DEPENDENCIES geometry_msgs std_msgs )
 
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
-# Change two lines below according to your installation
-set(OPENNI2_DIR ~/dev/OpenNI2)
-set(NITE2_DIR ~/dev/NiTE-Linux-x64-2.2/)
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-link_directories(${OPENNI2_DIR}/Bin/x64-Release)
-include_directories(${OPENNI2_DIR}/Include)
-link_directories(${NITE2_DIR}/Redist)
-include_directories(${NITE2_DIR}/Include)
-rosbuild_add_executable(tracker src/tracker.cpp)
-target_link_libraries(tracker OpenNI2 NiTE2)
+catkin_package(
+INCLUDE_DIRS # include
+CATKIN_DEPENDS geometry_msgs std_msgs message_runtime
+)
+
+set(OPENNI2_DIR ~/OpenNI/OpenNI2)
+set(NITE2_DIR ~/OpenNI/NiTE-2.0.0/)
+
+include_directories(
+  # include
+  ${catkin_INCLUDE_DIRS}
+  ${OPENNI2_DIR}/Include
+  ${NITE2_DIR}/Include
+)
+
+link_directories(${OPENNI2_DIR}/Bin/x64-Release
+                 ${NITE2_DIR}/Redist)
+
+add_executable(tracker src/tracker.cpp)
+add_dependencies(tracker ${PROJECT_NAME}_gencpp)
+target_link_libraries(tracker OpenNI2 NiTE2 ${catkin_LIBRARIES} )
