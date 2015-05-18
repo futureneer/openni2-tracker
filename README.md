@@ -67,7 +67,7 @@ You will probably need to create a free account.
 7. Run openni2_tracker
     
     ```bash
-    roslaunch openni2_tracker tracker.launch
+    roslaunch skeleton_tracker tracker.launch
     ```
 
     In the lauch file, you can rename both the tracker name and the tracker's relative frame.  I have included a static publisher that aligns the tracker frame to the world frame, approximately 1.25m off the floor.
@@ -78,7 +78,7 @@ You will probably need to create a free account.
     
       <arg name="tracker_name" default="tracker" />
       
-      <node name="tracker" output="screen" pkg="openni2_tracker" type="tracker" >
+      <node name="tracker" output="screen" pkg="skeleton_tracker" type="tracker" >
         <param name="tf_prefix" value="$(arg tracker_name)" />
         <param name="relative_frame" value="/$(arg tracker_name)_depth_frame" />
       </node>
