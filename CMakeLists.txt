@@ -1,43 +1,58 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(skeleton_tracker)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS
+  cv_bridge
+  geometry_msgs
+  image_transport
+  kdl_conversions
+  openni2_camera
+  pcl_conversions
+  pcl_ros
+  roscpp
+  roslib
+  tf
+)
 
-rosbuild_init()
+#find_package(opencv REQUIRED)
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+include_directories(
+    include
+    ${catkin_INCLUDE_DIRS}
+)
 
-#uncomment if you have defined messages
-rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
+add_message_files(
+   FILES
+   user_IDs.msg
+)
 
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
-# Change two lines below according to your installation
-set(OPENNI2_DIR ~/dev/OpenNI2)
-set(NITE2_DIR ~/dev/NiTE-Linux-x64-2.2/)
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+generate_messages(
+    DEPENDENCIES geometry_msgs
+)
+
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES skeleton_tracker
+  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport kdl_conversions openni2_camera pcl_conversions pcl_ros roscpp roslib tf
+  DEPENDS system_lib opencv
+)
+
+set(OPENNI2_DIR ~/OpenNI2)
+set(OPENNI2_WRAPPER /opt/ros/indigo/include/openni2_camera/)
+set(NITE2_DIR ~/Openni2/NiTE-2.0.0/)
+set(NITE2_LIB ~/Openni2/NiTE-2.0.0/Redist/libNiTE2.so)
+
 link_directories(${OPENNI2_DIR}/Bin/x64-Release)
+
+include_directories(${OPENNI2_DIR}/Bin/x64-Release)
+include_directories(/usr/include/openni2/)
 include_directories(${OPENNI2_DIR}/Include)
-link_directories(${NITE2_DIR}/Redist)
+include_directories(${OPENNI2_WRAPPER})
 include_directories(${NITE2_DIR}/Include)
-rosbuild_add_executable(tracker src/tracker.cpp)
-target_link_libraries(tracker OpenNI2 NiTE2)
+include_directories(${OpenCV_INCLUDE_DIRS}/include)
+
+add_executable(skeleton_tracker src/skeleton_tracker_node.cpp)
+target_link_libraries(skeleton_tracker OpenNI2 ${NITE2_LIB} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
