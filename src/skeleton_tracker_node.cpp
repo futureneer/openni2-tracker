@@ -307,7 +307,7 @@ int main(int argc, char** argv)
       const char* uri = info.getUri();
       std::string stringa(uri);
       openni2_wrapper::OpenNI2Device dev(stringa);
-      cloud_msg->header.stamp = ros::Time::now().toNSec();
+      cloud_msg->header.stamp = 0;
       cloud_msg->width = depthFrame.getWidth();
       cloud_msg->height = depthFrame.getHeight();
       centerX = (cloud_msg->width >> 1) - 0.5f;
@@ -355,7 +355,9 @@ int main(int argc, char** argv)
           pt.rgb = color.float_value;
         }
       }
-
+      sensor_msgs::PointCloud2 pc;
+      pcl::toROSMsg(*cloud_msg, pc);
+      pc.header.stamp = ros::Time::now();
       pub_point_cloud.publish(cloud_msg);
     }
     else
