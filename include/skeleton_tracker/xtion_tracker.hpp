@@ -52,7 +52,10 @@ typedef union
   long long_value;
 } RGBValue;
 
-
+/**
+ * Class \ref xtion_tracker. This class can track the skeleton of people and returns joints as a TF stream,
+ *  while publishing the video stream and the point cloud captured by an ASUS Xtion Pro Live.
+ */
 class xtion_tracker
 {
 public:
