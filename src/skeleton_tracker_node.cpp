@@ -1,13 +1,3 @@
-/**
- * \ref skeleton_tracker_node.cpp
- *
- *  \date 12/mag/2015
- *  \author Alessio Levratti
- *  \version
- *  \bug
- *  \copyright GNU Public License.
- */
-
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
@@ -45,6 +35,7 @@
 /*
  * Author: Kelleher Guerin, futureneer@gmail.com, Johns Hopkins University
  * Edited by: Alessio Levratti, alessio.levratti@unimore.it, University of Modena and Reggio Emilia
+ * Version 0.2
  */
 
 // ROS Dependencies
@@ -53,6 +44,9 @@
 #include <tf/transform_broadcaster.h>
 #include <kdl/frames.hpp>
 #include <iostream>
+#include <fstream>
+#include <string.h>
+#include <strings.h>
 #include <std_msgs/Int16.h>
 #include <skeleton_tracker/user_IDs.h>
 #include <opencv2/core/core.hpp>
@@ -68,6 +62,7 @@
 #include <openni2/OpenNI.h>
 #include <openni2/OniCEnums.h>
 #include "openni_camera/openni_depth_image.h"
+#include "openni_camera/openni_exception.h"
 #include <sensor_msgs/image_encodings.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
@@ -75,6 +70,7 @@
 #define MAX_USERS 10
 bool g_visibleUsers[MAX_USERS] = {false};
 nite::SkeletonState g_skeletonStates[MAX_USERS] = {nite::SKELETON_NONE};
+
 
 #define USER_MESSAGE(msg) \
         {printf("[%08llu] User #%d:\t%s\n",ts, user.getId(),msg);}
@@ -157,11 +153,14 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   ros::Publisher user = nh.advertise<skeleton_tracker::user_IDs>("/people", 1);
   ros::Publisher pub_point_cloud = nh.advertise<pcl::PointCloud<pcl::PointXYZ> >("/camera/point_cloud", 5);
+  ros::Publisher pub_depth_info_ = nh.advertise<sensor_msgs::CameraInfo>("camera/depth_info", 5);
   image_transport::ImageTransport it(nh);
-  image_transport::Publisher image_pub = it.advertise("/camera/image", 1);
+  image_transport::Publisher image_pub = it.advertise("/camera/rgb/image", 1);
+//  image_transport::Publisher pub_depth_image = it.advertise("/camera/depth/image", 5);
   ros::NodeHandle pnh("~"); //private node handler
   std::string tf_prefix, relative_frame = "";
   tf::TransformBroadcaster br;
+  ROS_WARN("WARNING!!!! This node is deprecated! Use \"xtion_tracker\" instead!");
 
   // Get Tracker Parameters
   if (!pnh.getParam("tf_prefix", tf_prefix))
@@ -255,7 +254,7 @@ int main(int argc, char** argv)
 
     if (depthStream.setVideoMode(depthMode) != openni::STATUS_OK)
     {
-     //ROS_WARN("Can't apply depth-videomode\n");
+      //ROS_WARN("Can't apply depth-videomode\n");
     }
 
     depthStream.setMirroringEnabled(false);
@@ -269,7 +268,6 @@ int main(int argc, char** argv)
   while (nh.ok())
   {
     skeleton_tracker::user_IDs ids;
-
     // Video capture
 
     // get color frame
@@ -313,7 +311,31 @@ int main(int argc, char** argv)
       centerX = (cloud_msg->width >> 1) - 0.5f;
       centerY = (cloud_msg->height >> 1) - 0.5f;
       cloud_msg->is_dense = false;
-      cloud_msg->points.resize(cloud_msg->height * cloud_msg->width);
+      cloud_msg->points.resize((unsigned long)(cloud_msg->height * cloud_msg->width));
+
+
+
+      // Publish camera_info
+      sensor_msgs::CameraInfo info_msg;
+//      info_msg->header.stamp = 0;
+      info_msg.header.frame_id = "camera_depth_optical_frame";
+      info_msg.width = 640;
+      info_msg.height = 480;
+      info_msg.D = std::vector<double>(5, 0.0);
+      info_msg.distortion_model = "plumb_bob";
+      double f = dev.getDepthFocalLength(depthFrame.getHeight());
+      info_msg.K[0] = info_msg.K[4] = 570.3422241210938;
+      info_msg.K[2] = 314.5; //(info_msg.width / 2) - 0.5;
+      info_msg.K[5] = 235.5; //(info_msg.width * 3. / 8.) - 0.5; //aspect ratio for the camera center on kinect and presumably other devices is 4/3
+      info_msg.K[8] = 1.0;
+      // no rotation: identity
+      info_msg.R[0] = info_msg.R[4] = info_msg.R[8] = 1.0;
+      // no rotation, no translation => P=K(I|0)=(K|0)
+      info_msg.P[0] = info_msg.P[5] = info_msg.K[0];
+      info_msg.P[2] = info_msg.K[2];
+      info_msg.P[6] = info_msg.K[5];
+      info_msg.P[10] = 1.0;
+      pub_depth_info_.publish(info_msg);
 
       color_step = 3 * msg->width / cloud_msg->width;
       color_skip = 3 * (msg->height / cloud_msg->height - 1) * msg->width;
@@ -322,15 +344,14 @@ int main(int argc, char** argv)
 
       const openni::DepthPixel* pDepth = (const openni::DepthPixel*)depthFrame.getData();
 
+      float bad_point = std::numeric_limits<float>::quiet_NaN();
+
       float constant = 0.001 / dev.getDepthFocalLength(depthFrame.getHeight());
 
       cloud_msg->header.frame_id = relative_frame;
 
-      float bad_point = std::numeric_limits<float>::quiet_NaN();
-
       int color_idx = 0, depth_idx = 0;
       pcl::PointCloud<pcl::PointXYZRGB>::iterator pt_iter = cloud_msg->begin();
-
       for (int v = 0; v < (int)cloud_msg->height; ++v, color_idx += color_skip)
       {
         for (int u = 0; u < (int)cloud_msg->width; ++u, color_idx += color_step, ++depth_idx, ++pt_iter)
@@ -358,14 +379,13 @@ int main(int argc, char** argv)
       sensor_msgs::PointCloud2 pc;
       pcl::toROSMsg(*cloud_msg, pc);
       pc.header.stamp = ros::Time::now();
-      pub_point_cloud.publish(cloud_msg);
+      pub_point_cloud.publish(pc);
     }
     else
     {
       ROS_WARN("Failed to get the Point Cloud");
     }
     depthStream.stop();
-
     niteRc = userTracker.readFrame(&userTrackerFrame);
     if (niteRc != nite::STATUS_OK)
     {
@@ -415,3 +435,5 @@ int main(int argc, char** argv)
   }
   nite::NiTE::shutdown();
 }
+
+

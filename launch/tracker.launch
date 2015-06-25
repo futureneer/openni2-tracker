@@ -2,7 +2,7 @@
 
 	<arg name="tracker_name" default="tracker" />
 
-	<node pkg="skeleton_tracker" type="skeleton_tracker" name="skeleton_tracker" output="screen">
+	<node pkg="skeleton_tracker" type="xtion_tracker" name="skeleton_tracker" output="screen">
 		<param name="tf_prefix" value="$(arg tracker_name)" />
     	<param name="relative_frame" value="/$(arg tracker_name)_depth_frame" />
 	</node>
