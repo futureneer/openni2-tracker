@@ -1,0 +1,7 @@
+Version 1.0
+-added a new version of the skeleton_tracker node. The new node is called "xtion_tracker" and is a cleaner 
+version of the old node. Furthermore the new version is much more "reusable" and expandable by other users. 
+The old version is now deprecated, but is still in the repository. In future it will be removed.  
+
+Version 0.1 (deprecated)
+-The skeleton_tracker node now can publish the stream video, the IDs of the tracked users and the point cloud on topics.
