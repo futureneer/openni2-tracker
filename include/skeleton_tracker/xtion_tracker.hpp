@@ -17,7 +17,9 @@
 #include <iostream>
 #include <skeleton_tracker/user_IDs.h>
 #include <cv_bridge/cv_bridge.h>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/distortion_models.h>
 #include <image_transport/image_transport.h>
 #include "NiTE.h"
 #include <openni2_camera/openni2_device.h>
@@ -100,10 +102,26 @@ public:
 
     // Initialize the tracker
     nite::NiTE::initialize();
-    niteRc_ = userTracker_.create();
-    if (niteRc_ != nite::STATUS_OK)
+
+    // Set the depth mode
+    if (depthStream_.create(devDevice_, openni::SENSOR_DEPTH) == openni::STATUS_OK)
     {
-      ROS_FATAL("Couldn't create user tracker");
+      depthMode_ = depthStream_.getSensorInfo().getSupportedVideoModes()[4];
+      ROS_INFO("The wished depth mode is %d x %d at %d FPS. Pixel format %d", depthMode_.getResolutionX(),
+               depthMode_.getResolutionY(), depthMode_.getFps(), depthMode_.getPixelFormat());
+      if (depthStream_.setVideoMode(depthMode_) != openni::STATUS_OK)
+      {
+        ROS_ERROR("Can't apply depth-videomode");
+        depthMode_ = depthStream_.getVideoMode();
+        ROS_INFO("The depth mode is set to %d x %d at %d FPS. Pixel format %d", depthMode_.getResolutionX(),
+                 depthMode_.getResolutionY(), depthMode_.getFps(), depthMode_.getPixelFormat());
+      }
+
+      depthStream_.setMirroringEnabled(false);
+    }
+    else
+    {
+      ROS_FATAL("Can't create depth stream on device");
       ros::shutdown();
       return;
     }
@@ -115,14 +133,16 @@ public:
       mMode_.setResolution(640, 480);
       mMode_.setFps(30);
       mMode_.setPixelFormat(openni::PIXEL_FORMAT_RGB888);
+      ROS_INFO("The wished video mode is %d x %d at %d FPS", mMode_.getResolutionX(), mMode_.getResolutionY(),
+               mMode_.getFps());
 
       if (vsColorStream_.setVideoMode(mMode_) != openni::STATUS_OK)
       {
-        ROS_INFO("Can't apply videomode\n");
+        ROS_ERROR("Can't apply videomode\n");
+        ROS_INFO("The video mode is set to %d x %d at %d FPS", mMode_.getResolutionX(), mMode_.getResolutionY(),
+                 mMode_.getFps());
         mMode_ = vsColorStream_.getVideoMode();
       }
-      ROS_INFO("The video mode is set to %d x %d at %d FPS", mMode_.getResolutionX(), mMode_.getResolutionY(),
-               mMode_.getFps());
 
       // image registration
       if (devDevice_.isImageRegistrationModeSupported(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR))
@@ -137,32 +157,18 @@ public:
       ros::shutdown();
       return;
     }
-    // Start the RGB video stream
-    vsColorStream_.start();
 
-    // Set the depth mode
-    if (depthStream_.create(devDevice_, openni::SENSOR_DEPTH) == openni::STATUS_OK)
+    niteRc_ = userTracker_.create();
+    if (niteRc_ != nite::STATUS_OK)
     {
-      // set depth mode
-      //depthMode_ = depthStream_.getVideoMode();
-      depthMode_.setResolution(320,240);
-      depthMode_.setFps(30);
-      depthMode_.setPixelFormat(openni::PIXEL_FORMAT_DEPTH_1_MM);
-      if (depthStream_.setVideoMode(depthMode_) != openni::STATUS_OK)
-      {
-        ROS_WARN("Can't apply depth-videomode");
-      }
-      depthStream_.setMirroringEnabled(false);
-    }
-    else
-    {
-      ROS_FATAL("Can't create depth stream on device: ");
+      ROS_FATAL("Couldn't create user tracker");
       ros::shutdown();
       return;
     }
-    depthMode_ = depthStream_.getVideoMode();
-    ROS_INFO("The depth mode is set to %d x %d at %d FPS. Pixel format %d", depthMode_.getResolutionX(), depthMode_.getResolutionY(),
-             depthMode_.getFps(), depthMode_.getPixelFormat());
+
+    // Start the RGB video stream and the depth video stream
+    vsColorStream_.start();
+    depthStream_.start();
 
     // Initialize the image publisher
     imagePub_ = it_.advertise("/camera/rgb/image", 1);
@@ -170,8 +176,15 @@ public:
     // Initialize the point cloud publisher
     pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/camera/point_cloud", 5);
 
+    // Initialize the depth image publisher
+    depthPub_ = it_.advertise("/camera/depth/image", 1);
+
     // Initialize the users IDs publisher
     userPub_ = nh_.advertise<skeleton_tracker::user_IDs>("/people", 1);
+
+    depthInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/depth/camera_info", 1);
+
+    rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/rgb/camera_info", 1);
 
     rate_ = new ros::Rate(100);
 
@@ -197,6 +210,11 @@ public:
     {
       this->getPointCloud();
     }
+
+    this->getDepth();
+
+    depthInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), false));
+
     // Broadcast the joint frames (if they exist)
     this->getSkeleton();
 
@@ -220,9 +238,13 @@ private:
       {
         // Convert the cv image in a ROSy format
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
+        msg_->header.frame_id = relative_frame_;
+        msg_->header.stamp = ros::Time::now();
         imagePub_.publish(msg_);
         cv::flip(mImageRGB, mImageRGB, 1);
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
+        rgbInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), true));
+
       }
       else
       {
@@ -308,6 +330,37 @@ private:
       pcl::toROSMsg(*cloud_msg, pc);
       pc.header.stamp = ros::Time::now();
       pointCloudPub_.publish(pc);
+    }
+
+  }
+
+  /**
+   * This method publishes the depth image on ROS
+   */
+  void getDepth()
+  {
+    depthStream_.start();
+    depthStream_.readFrame(&depthFrame_);
+    if (depthFrame_.isValid())
+    {
+      cv::Mat image = cv::Mat(depthStream_.getVideoMode().getResolutionY(),
+                              depthStream_.getVideoMode().getResolutionX(),
+                              CV_16U,
+                              (char *)depthFrame_.getData());
+      image.convertTo(image, CV_8U, 256.0 / 10000);
+      cv::equalizeHist(image, image);
+      cv::flip(image, image, 1);
+      sensor_msgs::ImagePtr depthPic;
+
+      depthPic = cv_bridge::CvImage(std_msgs::Header(), "mono8", image).toImageMsg();
+      depthPic->header.frame_id = relative_frame_;
+      depthPic->header.stamp = ros::Time::now();
+      depthPub_.publish(depthPic);
+
+    }
+    else
+    {
+      ROS_ERROR("Unable to publish depth-image");
     }
 
   }
@@ -435,6 +488,52 @@ private:
     userPub_.publish(ids);
   }
 
+  /**
+   * Method that returns information about the camera
+   * @param time: ros timestamp
+   * @param is_rgb
+   * @return the \ref sensor_msgs::CameraInfoPtr message
+   */
+  sensor_msgs::CameraInfoPtr fillCameraInfo(ros::Time time, bool is_rgb)
+  {
+
+    sensor_msgs::CameraInfoPtr info_msg = boost::make_shared<sensor_msgs::CameraInfo>();
+    if (!is_rgb)
+    {
+      depthStream_.start();
+      depthStream_.readFrame(&depthFrame_);
+    }
+
+    info_msg->header.stamp = time;
+    info_msg->header.frame_id = relative_frame_;
+    info_msg->width = is_rgb ? mMode_.getResolutionX() : depthMode_.getResolutionX();
+    info_msg->height = is_rgb ? mMode_.getResolutionY() : depthMode_.getResolutionY();
+    info_msg->D = std::vector<double>(5, 0.0);
+    info_msg->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+    info_msg->K.assign(0.0);
+    info_msg->R.assign(0.0);
+    info_msg->P.assign(0.0);
+    openni::DeviceInfo info = devDevice_.getDeviceInfo();
+    const char* uri = info.getUri();
+    std::string stringa(uri);
+    openni2_wrapper::OpenNI2Device dev(stringa);
+
+    double f =
+        is_rgb ? dev.getColorFocalLength(vfColorFrame_.getHeight()) : dev.getColorFocalLength(depthFrame_.getHeight());
+    info_msg->K[0] = info_msg->K[4] = f;
+    info_msg->K[2] = (info_msg->width / 2) - 0.5;
+    info_msg->K[5] = (info_msg->width * 3. / 8.) - 0.5; //aspect ratio for the camera center on kinect and presumably other devices is 4/3
+    info_msg->K[8] = 1.0;
+    // no rotation: identity
+    info_msg->R[0] = info_msg->R[4] = info_msg->R[8] = 1.0;
+    // no rotation, no translation => P=K(I|0)=(K|0)
+    info_msg->P[0] = info_msg->P[5] = info_msg->K[0];
+    info_msg->P[2] = info_msg->K[2];
+    info_msg->P[6] = info_msg->K[5];
+    info_msg->P[10] = 1.0;
+    return (info_msg);
+  }
+
   /// ROS NodeHandle
   ros::NodeHandle nh_;
 
@@ -474,7 +573,20 @@ private:
   sensor_msgs::ImagePtr msg_;
   /// Node rate
   ros::Rate* rate_;
+  /// Depth image publisher
+  image_transport::Publisher depthPub_;
 
-};
+  ///RGB Camera INFO
+  sensor_msgs::CameraInfoPtr rgbInfo_;
+  ///RGB Camera info publisher
+  ros::Publisher rgbInfoPub_;
+
+  /// Depth Info
+  sensor_msgs::CameraInfo depthInfo_;
+  /// Depth info publisher
+  ros::Publisher depthInfoPub_;
+
+}
+;
 
 #endif /* XTION_TRACKER_HPP_ */

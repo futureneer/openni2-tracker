@@ -20,6 +20,10 @@ int main(int argc, char **argv) {
     skeleton_tracker->spinner();
   }
 
+  delete skeleton_tracker;
+
+  return 1;
+
 }
 
 
