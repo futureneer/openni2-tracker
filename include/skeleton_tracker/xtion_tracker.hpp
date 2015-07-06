@@ -18,6 +18,7 @@
 #include <skeleton_tracker/user_IDs.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/distortion_models.h>
 #include <image_transport/image_transport.h>
@@ -29,6 +30,10 @@
 #include <sensor_msgs/image_encodings.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
+
+#ifndef ALPHA
+#define ALPHA 1/256
+#endif
 
 #define MAX_USERS 10
 
@@ -82,6 +87,13 @@ public:
       ros::shutdown();
       return;
     }
+    if (!pnh.getParam("camera_frame", camera_frame_))
+    {
+      ROS_FATAL("camera_frame not found on Parameter Server! Maybe you should add it to your launch file!");
+      ros::shutdown();
+      return;
+    }
+
 
     // Initialize OpenNI
     if (openni::OpenNI::initialize() != openni::STATUS_OK)
@@ -149,7 +161,7 @@ public:
       {
         devDevice_.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
       }
-      vsColorStream_.setMirroringEnabled(false);
+      vsColorStream_.setMirroringEnabled(true);
     }
     else
     {
@@ -182,6 +194,7 @@ public:
     // Initialize the users IDs publisher
     userPub_ = nh_.advertise<skeleton_tracker::user_IDs>("/people", 1);
 
+    // Initialize both the Camera Info publishers
     depthInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/depth/camera_info", 1);
 
     rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/rgb/camera_info", 1);
@@ -211,8 +224,10 @@ public:
       this->getPointCloud();
     }
 
+    // Broadcast the depth image
     this->getDepth();
 
+    // Broadcast the depth camera info
     depthInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), false));
 
     // Broadcast the joint frames (if they exist)
@@ -238,11 +253,12 @@ private:
       {
         // Convert the cv image in a ROSy format
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
-        msg_->header.frame_id = relative_frame_;
+        msg_->header.frame_id = camera_frame_;
         msg_->header.stamp = ros::Time::now();
         imagePub_.publish(msg_);
         cv::flip(mImageRGB, mImageRGB, 1);
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
+        // Publish the rgb camera info
         rgbInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), true));
 
       }
@@ -341,22 +357,22 @@ private:
   {
     depthStream_.start();
     depthStream_.readFrame(&depthFrame_);
+    // If the obtained frame is valid, then publish it over  ROS
     if (depthFrame_.isValid())
     {
+      openni::DepthPixel* pData = (openni::DepthPixel*)depthFrame_.getData();
       cv::Mat image = cv::Mat(depthStream_.getVideoMode().getResolutionY(),
                               depthStream_.getVideoMode().getResolutionX(),
-                              CV_16U,
-                              (char *)depthFrame_.getData());
-      image.convertTo(image, CV_8U, 256.0 / 10000);
-      cv::equalizeHist(image, image);
-      cv::flip(image, image, 1);
-      sensor_msgs::ImagePtr depthPic;
+                              CV_16UC1,
+                              pData);
 
-      depthPic = cv_bridge::CvImage(std_msgs::Header(), "mono8", image).toImageMsg();
-      depthPic->header.frame_id = relative_frame_;
-      depthPic->header.stamp = ros::Time::now();
-      depthPub_.publish(depthPic);
-
+      image.convertTo(image, CV_32FC1, 0.001);
+      cv_bridge::CvImage out_msg;
+      out_msg.header.stamp = ros::Time::now();
+      out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+      out_msg.image = image;
+      out_msg.header.frame_id = camera_frame_;
+      depthPub_.publish(out_msg.toImageMsg());
     }
     else
     {
@@ -505,7 +521,7 @@ private:
     }
 
     info_msg->header.stamp = time;
-    info_msg->header.frame_id = relative_frame_;
+    info_msg->header.frame_id = camera_frame_;
     info_msg->width = is_rgb ? mMode_.getResolutionX() : depthMode_.getResolutionX();
     info_msg->height = is_rgb ? mMode_.getResolutionY() : depthMode_.getResolutionY();
     info_msg->D = std::vector<double>(5, 0.0);
@@ -585,6 +601,8 @@ private:
   sensor_msgs::CameraInfo depthInfo_;
   /// Depth info publisher
   ros::Publisher depthInfoPub_;
+
+  std::string camera_frame_;
 
 }
 ;

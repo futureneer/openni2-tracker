@@ -1,3 +1,11 @@
+Version 1.2
+-fixed some bugs on the depth image
+
+Version 1.1
+-added a publisher for the depth image
+-added a publisher for the depth camera info
+-added a publisher for the rgb camera info
+
 Version 1.0
 -added a new version of the skeleton_tracker node. The new node is called "xtion_tracker" and is a cleaner 
 version of the old node. Furthermore the new version is much more "reusable" and expandable by other users. 

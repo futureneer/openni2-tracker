@@ -1,13 +1,17 @@
 <launch>
 
 	<arg name="tracker_name" default="tracker" />
+	<arg name="camera_frame" default="camera_frame"/>
 
 	<node pkg="skeleton_tracker" type="xtion_tracker" name="skeleton_tracker" output="screen">
 		<param name="tf_prefix" value="$(arg tracker_name)" />
     	<param name="relative_frame" value="/$(arg tracker_name)_depth_frame" />
+    	<param name="camera_frame" type="string" value="/$(arg camera_frame)"/>
 	</node>
 	<!-- TF Static Transforms to World -->
-    <!-- >node pkg="tf" type="static_transform_publisher" name="top_plate_to_tracker" 
-    args=" 0 0 .385 1.5707 0 1.5707  /world /$(arg tracker_name)_depth_frame 100"/--> 
+    <node pkg="tf" type="static_transform_publisher" name="top_plate_to_tracker" 
+    args=" 0 0 .385 1.5707 0 1.5707  /world /$(arg tracker_name)_depth_frame 100"/> 
+    <node pkg="tf" type="static_transform_publisher" name="depth_toObjRecog" 
+    args=" 0 0 0 3.1415 0 0  /$(arg tracker_name)_depth_frame /$(arg camera_frame) 100"/> 
 	
 </launch>
