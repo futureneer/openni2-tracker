@@ -94,7 +94,6 @@ public:
       return;
     }
 
-
     // Initialize OpenNI
     if (openni::OpenNI::initialize() != openni::STATUS_OK)
     {
@@ -252,11 +251,13 @@ private:
       if (!mImageRGB.empty())
       {
         // Convert the cv image in a ROSy format
+        cv::flip(mImageRGB, mImageRGB, 1);
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
         msg_->header.frame_id = camera_frame_;
         msg_->header.stamp = ros::Time::now();
+
         imagePub_.publish(msg_);
-        cv::flip(mImageRGB, mImageRGB, 1);
+
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
         // Publish the rgb camera info
         rgbInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), true));
@@ -367,10 +368,12 @@ private:
                               pData);
 
       image.convertTo(image, CV_32FC1, 0.001);
+//      cv::flip(image, image, 1);
       cv_bridge::CvImage out_msg;
       out_msg.header.stamp = ros::Time::now();
       out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
       out_msg.image = image;
+
       out_msg.header.frame_id = camera_frame_;
       depthPub_.publish(out_msg.toImageMsg());
     }
