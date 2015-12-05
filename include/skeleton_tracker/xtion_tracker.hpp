@@ -128,7 +128,7 @@ public:
                  depthMode_.getResolutionY(), depthMode_.getFps(), depthMode_.getPixelFormat());
       }
 
-      depthStream_.setMirroringEnabled(false);
+      depthStream_.setMirroringEnabled(true);// both parameters (depth and color stream) settled as "true", it allows a superposition of video and tracking image not mirrored.
     }
     else
     {
