@@ -31,10 +31,6 @@
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 
-#ifndef ALPHA
-#define ALPHA 1/256
-#endif
-
 #define MAX_USERS 10
 
 #define USER_MESSAGE(msg) \
@@ -48,7 +44,7 @@ typedef std::map<std::string, nite::SkeletonJoint> JointMap;
  */
 typedef union
 {
-  struct /*anonymous*/
+  struct
   {
     unsigned char Blue;
     unsigned char Green;
@@ -144,14 +140,14 @@ public:
       mMode_.setResolution(640, 480);
       mMode_.setFps(30);
       mMode_.setPixelFormat(openni::PIXEL_FORMAT_RGB888);
-      ROS_INFO("The wished video mode is %d x %d at %d FPS", mMode_.getResolutionX(), mMode_.getResolutionY(),
-               mMode_.getFps());
+      ROS_INFO("The wished video mode is %d x %d at %d FPS. Pixel format %d", mMode_.getResolutionX(),
+               mMode_.getResolutionY(), mMode_.getFps(), mMode_.getPixelFormat());
 
       if (vsColorStream_.setVideoMode(mMode_) != openni::STATUS_OK)
       {
         ROS_ERROR("Can't apply videomode\n");
-        ROS_INFO("The video mode is set to %d x %d at %d FPS", mMode_.getResolutionX(), mMode_.getResolutionY(),
-                 mMode_.getFps());
+        ROS_INFO("The video mode is set to %d x %d at %d FPS. Pixel format %d", mMode_.getResolutionX(),
+                 mMode_.getResolutionY(), mMode_.getFps(), mMode_.getPixelFormat());
         mMode_ = vsColorStream_.getVideoMode();
       }
 
@@ -185,7 +181,7 @@ public:
     imagePub_ = it_.advertise("/camera/rgb/image", 1);
 
     // Initialize the point cloud publisher
-    pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/camera/point_cloud", 5);
+    pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("/camera/point_cloud", 5);
 
     // Initialize the depth image publisher
     depthPub_ = it_.advertise("/camera/depth/image", 1);
@@ -195,7 +191,6 @@ public:
 
     // Initialize both the Camera Info publishers
     depthInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/depth/camera_info", 1);
-
     rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/rgb/camera_info", 1);
 
     rate_ = new ros::Rate(100);
@@ -258,7 +253,6 @@ private:
 
         imagePub_.publish(msg_);
 
-        msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
         // Publish the rgb camera info
         rgbInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), true));
 
@@ -331,7 +325,7 @@ private:
             continue;
           }
           // Fill in XYZRGB
-          pt.x = (u - centerX) * pDepth[depth_idx] * constant;
+          pt.x = -(u - centerX) * pDepth[depth_idx] * constant;
           pt.y = -(v - centerY) * pDepth[depth_idx] * constant;
           pt.z = pDepth[depth_idx] * 0.001;
           RGBValue color;
@@ -368,7 +362,6 @@ private:
                               pData);
 
       image.convertTo(image, CV_32FC1, 0.001);
-//      cv::flip(image, image, 1);
       cv_bridge::CvImage out_msg;
       out_msg.header.stamp = ros::Time::now();
       out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
@@ -561,7 +554,7 @@ private:
 
   /// Image transport
   image_transport::ImageTransport it_;
-  std::string tf_prefix_, relative_frame_;
+  std::string tf_prefix_, relative_frame_, camera_frame_;
   /// Frame broadcaster
   tf::TransformBroadcaster tfBroadcast_;
   /// The openni device
@@ -605,9 +598,6 @@ private:
   /// Depth info publisher
   ros::Publisher depthInfoPub_;
 
-  std::string camera_frame_;
-
-}
-;
+};
 
 #endif /* XTION_TRACKER_HPP_ */

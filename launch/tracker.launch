@@ -8,10 +8,18 @@
     	<param name="relative_frame" value="/$(arg tracker_name)_depth_frame" />
     	<param name="camera_frame" type="string" value="/$(arg camera_frame)"/>
 	</node>
+	
+	<node pkg="nodelet" type="nodelet" name="manager" args="manager"/>
+	
+	<node pkg="nodelet" type="nodelet" name="rectifier" args="depth_image_proc/disparity">
+		<param name="depth_registration" type="bool" value="true"/>
+	</node>
+	
 	<!-- TF Static Transforms to World -->
     <node pkg="tf" type="static_transform_publisher" name="top_plate_to_tracker" 
     args=" 0 0 .385 1.5707 0 1.5707  /world /$(arg tracker_name)_depth_frame 100"/> 
+    
     <node pkg="tf" type="static_transform_publisher" name="depth_toObjRecog" 
-    args=" 0 0 0 3.1415 0 0  /$(arg tracker_name)_depth_frame /$(arg camera_frame) 100"/> 
+    args="0 0 0 3.1415 0 0 /$(arg tracker_name)_depth_frame /$(arg camera_frame) 100"/> 
 	
 </launch>

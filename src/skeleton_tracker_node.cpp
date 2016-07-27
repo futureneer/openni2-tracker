@@ -61,8 +61,10 @@
 #include <openni2/OniCTypes.h>
 #include <openni2/OpenNI.h>
 #include <openni2/OniCEnums.h>
+#include <openni_camera/OpenNIConfig.h>
 #include "openni_camera/openni_depth_image.h"
 #include "openni_camera/openni_exception.h"
+#include <openni2/OniEnums.h>
 #include <sensor_msgs/image_encodings.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
@@ -209,6 +211,10 @@ int main(int argc, char** argv)
 
   // Create color stream
   openni::VideoStream vsColorStream;
+//  openni_camera::OpenNIConfig config;
+//  config.depth_registration = true;
+
+  devDevice.setDepthColorSyncEnabled(true);
 
   if (vsColorStream.create(devDevice, openni::SENSOR_COLOR) == openni::STATUS_OK)
   {
@@ -228,7 +234,7 @@ int main(int argc, char** argv)
     {
       devDevice.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
     }
-    vsColorStream.setMirroringEnabled(false);
+    vsColorStream.setMirroringEnabled(true);
   }
   else
   {
@@ -240,6 +246,7 @@ int main(int argc, char** argv)
   vsColorStream.start();
 
   openni::VideoFrameRef depthFrame;
+
   openni::VideoStream depthStream;
 
   int cols, rows;
@@ -283,9 +290,10 @@ int main(int argc, char** argv)
       // Check if grabbed frame is actually full with some content
       if (!mImageRGB.empty())
       {
+        cv::flip(mImageRGB, mImageRGB, 1);
         msg = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
         image_pub.publish(msg);
-        cv::flip(mImageRGB, mImageRGB, 1);
+
         msg = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
       }
       vfColorFrame.release();

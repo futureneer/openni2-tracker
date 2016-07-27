@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   roslib
   tf
+  message_generation
 )
 
 #find_package(opencv REQUIRED)
@@ -36,7 +37,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES skeleton_tracker
-  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport kdl_conversions openni2_camera pcl_conversions pcl_ros roscpp roslib tf
+  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport kdl_conversions openni2_camera pcl_conversions pcl_ros roscpp roslib tf message_runtime
   DEPENDS system_lib opencv
 )
 
