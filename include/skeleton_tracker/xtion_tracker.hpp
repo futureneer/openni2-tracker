@@ -90,6 +90,8 @@ public:
       return;
     }
 
+    pnh.param("mirror_image", mirrorImage_, false);
+
     // Initialize OpenNI
     if (openni::OpenNI::initialize() != openni::STATUS_OK)
     {
@@ -156,7 +158,7 @@ public:
       {
         devDevice_.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
       }
-      vsColorStream_.setMirroringEnabled(true);
+      vsColorStream_.setMirroringEnabled(mirrorImage_);
     }
     else
     {
@@ -597,6 +599,9 @@ private:
   sensor_msgs::CameraInfo depthInfo_;
   /// Depth info publisher
   ros::Publisher depthInfoPub_;
+
+  /// Mirroring RGB
+  bool mirrorImage_;
 
 };
 

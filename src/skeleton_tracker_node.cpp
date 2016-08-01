@@ -176,6 +176,9 @@ int main(int argc, char** argv)
     return -1;
   }
 
+  bool mirror;
+  pnh.param("mirror_image", mirror, false);
+
   // Initial OpenNI
   if (openni::OpenNI::initialize() != openni::STATUS_OK)
   {
@@ -234,7 +237,7 @@ int main(int argc, char** argv)
     {
       devDevice.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
     }
-    vsColorStream.setMirroringEnabled(true);
+    vsColorStream.setMirroringEnabled(mirror);
   }
   else
   {
