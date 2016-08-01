@@ -91,6 +91,7 @@ public:
     }
 
     pnh.param("mirror_image", mirrorImage_, false);
+    pnh.param("mirror_depth", mirrorDepth_, false);
 
     // Initialize OpenNI
     if (openni::OpenNI::initialize() != openni::STATUS_OK)
@@ -126,7 +127,7 @@ public:
                  depthMode_.getResolutionY(), depthMode_.getFps(), depthMode_.getPixelFormat());
       }
 
-      depthStream_.setMirroringEnabled(true);// both parameters (depth and color stream) settled as "true", it allows a superposition of video and tracking image not mirrored.
+      depthStream_.setMirroringEnabled(mirrorDepth_); // both parameters (depth and color stream) settled as "true", it allows a superposition of video and tracking image not mirrored.
     }
     else
     {
@@ -602,6 +603,9 @@ private:
 
   /// Mirroring RGB
   bool mirrorImage_;
+
+  /// Mirroring Depth
+  bool mirrorDepth_;
 
 };
 
