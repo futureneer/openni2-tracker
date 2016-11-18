@@ -32,7 +32,7 @@ You will probably need to create a free account.
 3. Clone `openni2_tracker` to your ROS workspace.
 
     ```bash
-    git clone git@github.com:futureneer/openni2-tracker.git
+    git clone git@github.com:futureneer/openni2-tracker.git openni2_tracker
     ```
 
 4. Configure CMake
