@@ -1,43 +1,60 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 3.5)
+project(openni2_tracker)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+add_compile_options(-std=c++11)
 
-rosbuild_init()
+find_package(catkin REQUIRED COMPONENTS 
+	geometry_msgs
+	std_msgs
+	roscpp
+	roslib
+	tf
+	tf2
+	message_generation)
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+include_directories(${catkin_INCLUDE_DIRS})
+find_package(orocos_kdl REQUIRED)
 
-#uncomment if you have defined messages
-rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
+add_message_files(
+	FILES
+	TrackerUser.msg
+	TrackerUserArray.msg
+)
 
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
-# Change two lines below according to your installation
-set(OPENNI2_DIR ~/dev/OpenNI2)
-set(NITE2_DIR ~/dev/NiTE-Linux-x64-2.2/)
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-link_directories(${OPENNI2_DIR}/Bin/x64-Release)
-include_directories(${OPENNI2_DIR}/Include)
-link_directories(${NITE2_DIR}/Redist)
-include_directories(${NITE2_DIR}/Include)
-rosbuild_add_executable(tracker src/tracker.cpp)
-target_link_libraries(tracker OpenNI2 NiTE2)
+generate_messages(
+	DEPENDENCIES
+	std_msgs
+	geometry_msgs
+)
+
+catkin_package(
+	CATKIN_DEPENDS roscpp std_msgs geometry_msgs message_runtime
+)
+
+# Find OpenNI2
+find_path(OpenNI2_INCLUDE_DIR
+	  NAMES OpenNI.h
+	  HINTS /usr/local/include/OpenNI2)
+find_library(OpenNI2_LIBRARIES
+	     NAMES OpenNI2 DummyDevice libOniFile.so PS1090
+	     HINTS /usr/lib/ /usr/local/lib/OpenNI2/Drivers
+	     PATH_SUFFIXES lib) 
+message(STATUS ${OpenNI2_LIBRARIES})
+
+# Find Nite2
+message(status $ENV{NITE2_INCLUDE})
+message(status $ENV{NITE2_REDIST64})
+find_path(Nite2_INCLUDE_DIR
+	  NAMES NiTE.h
+	  HINTS /usr/local/include/NiTE-Linux-x64-2.2)
+find_library(Nite2_LIBRARY
+	     NAMES libNiTE2.so
+	     HINTS /usr/local/bin}
+	     PATH_SUFFIXES lib) 
+
+include_directories(${OpenNI2_INCLUDE_DIR}
+		    ${Nite2_INCLUDE_DIR})
+
+add_executable(tracker src/tracker.cpp)
+target_link_libraries(tracker ${catkin_LIBRARIES} ${OpenNI2_LIBRARIES} ${Nite2_LIBRARY})
+add_dependencies(tracker openni2_tracker_generate_messages_cpp)
