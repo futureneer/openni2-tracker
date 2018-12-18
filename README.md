@@ -1,4 +1,4 @@
-openni2_tracker
+openni2-tracker
 ===============
 
 This work is developed from [here](https://github.com/futureneer/openni2-tracker), which is based on out-dated rosbuild system. I made it support catkin system, and write a more detailed README to make user can build their development environment step by step.
