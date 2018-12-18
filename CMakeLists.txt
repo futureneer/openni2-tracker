@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
 	message_generation)
 
 include_directories(${catkin_INCLUDE_DIRS})
-find_package(orocos_kdl REQUIRED)
 
 add_message_files(
 	FILES
